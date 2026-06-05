@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WEI.rd Video Player</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
+        #menu-container { position: absolute; top: 20px; left: 20px; z-index: 10; color: white; }
+        #toggle-btn { background: #500; border: 1px solid #f00; color: #f00; padding: 10px 15px; font-size: 20px; cursor: pointer; border-radius: 5px; box-shadow: 0 0 10px #f00; }
+        #panel { display: none; background: rgba(50, 0, 0, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 0, 0, 0.5); padding: 15px; border-radius: 12px; margin-top: 10px; max-width: fit-content; }
+        button, input { display: block; margin: 8px 0; width: 100%; box-sizing: border-box; cursor: pointer; background: rgba(255,0,0,0.2); border: 1px solid #f00; color: #fff; padding: 8px; border-radius: 4px; }
+        button:hover { background: rgba(255,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+    <div id="menu-container">
+        <button id="toggle-btn">+</button>
+        <div id="panel">
+            <input type="file" id="fileInput" accept="video/*">
+            <button id="playBtn">Play / Stop</button>
+            <button onclick="changeShape('flat')">Flat Screen</button>
+            <button onclick="changeShape('inout')">Curve In / Out</button>
+            <button onclick="changeShape('sphere')">360</button>
+            <button onclick="zoom(true)">Zoom In</button>
+            <button onclick="zoom(false)">Zoom Out</button>
+            <button onclick="toggleOrientation()">Horizontal/Verticle</button>
+        </div>
+    </div>
+
+    <video id="video" loop playsinline style="display:none"></video>
+
+    <script type="module">
+        import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
+        import { OrbitControls } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js';
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        
+        const controls = new OrbitControls(camera, renderer.domElement);
+        camera.position.z = 10;
+
+        let curveState = 0;
+        const video = document.getElementById('video');
+        const texture = new THREE.VideoTexture(video);
+        const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+        let screen = new THREE.Mesh(new THREE.PlaneGeometry(16, 9), material);
+        scene.add(screen);
+
+        window.toggleOrientation = () => screen.rotation.z = (screen.rotation.z === 0) ? Math.PI / 2 : 0;
+        document.getElementById('toggle-btn').onclick = () => { const p = document.getElementById('panel'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; };
+        document.getElementById('playBtn').onclick = () => video.paused ? video.play() : video.pause();
+        window.zoom = (inOut) => camera.position.z += inOut ? -1 : 1;
+        
+        window.changeShape = (type) => {
+            scene.remove(screen);
+            let g = (type === 'flat') ? new THREE.PlaneGeometry(16, 9) : (type === 'sphere') ? new THREE.SphereGeometry(8, 32, 32) : (curveState = (curveState === 1) ? 2 : 1, curveState === 1 ? new THREE.CylinderGeometry(8, 8, 5, 32, 1, true, 0, Math.PI/2) : new THREE.CylinderGeometry(8, 8, 5, 32, 1, true, Math.PI, Math.PI/2));
+            screen = new THREE.Mesh(g, material);
+            scene.add(screen);
+        };
+        
+        document.getElementById('fileInput').onchange = (e) => video.src = URL.createObjectURL(e.target.files[0]);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.onresize = () => { renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); };
+    </script>
+</body>
+</html>
