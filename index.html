@@ -1,78 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WEI.rd Video Player</title>
-    <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
-        #menu-container { position: absolute; top: 20px; left: 20px; z-index: 10; color: white; }
-        #toggle-btn { background: #500; border: 1px solid #f00; color: #f00; padding: 10px 15px; font-size: 20px; cursor: pointer; border-radius: 5px; box-shadow: 0 0 10px #f00; }
-        #panel { display: none; background: rgba(50, 0, 0, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 0, 0, 0.5); padding: 15px; border-radius: 12px; margin-top: 10px; max-width: fit-content; }
-        button, input { display: block; margin: 8px 0; width: 100%; box-sizing: border-box; cursor: pointer; background: rgba(255,0,0,0.2); border: 1px solid #f00; color: #fff; padding: 8px; border-radius: 4px; }
-        button:hover { background: rgba(255,0,0,0.5); }
-    </style>
-</head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#000000"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="WEI.rd"><title>WEI.rd</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;color:#eee;font-family:system-ui,-apple-system,sans-serif;touch-action:none}canvas{display:block}.menu{position:fixed;z-index:10;top:max(14px,env(safe-area-inset-top));left:max(14px,env(safe-area-inset-left))}.toggle{width:44px;height:44px;border:1px solid #555;border-radius:8px;background:rgba(0,0,0,.78);color:#fff;font-size:23px}.panel{display:none;width:min(290px,calc(100vw - 28px));max-height:calc(100dvh - 76px);overflow:auto;margin-top:8px;padding:12px;border:1px solid #333;border-radius:10px;background:rgba(5,5,5,.9);backdrop-filter:blur(12px)}.panel.open{display:block}.title{font-size:12px;letter-spacing:.16em;margin:1px 2px 10px;color:#aaa}.file{display:block;width:100%;font-size:11px;margin-bottom:9px}.row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}.row.two{grid-template-columns:1fr 1fr}.panel button{min-height:38px;border:1px solid #383838;border-radius:6px;background:#0e0e0e;color:#ddd;font-size:11px}.panel button.active{background:#eee;color:#000;border-color:#eee}.status{margin:10px 2px 2px;font-size:10px;color:#777;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hint{position:fixed;z-index:5;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);font-size:10px;color:#777;background:rgba(0,0,0,.55);padding:5px 8px;border-radius:5px;pointer-events:none;white-space:nowrap}.hidden{display:none!important}@media(max-width:600px){.panel{width:min(310px,calc(100vw - 28px))}.hint{font-size:9px}}
+</style></head>
 <body>
-
-    <div id="menu-container">
-        <button id="toggle-btn">+</button>
-        <div id="panel">
-            <input type="file" id="fileInput" accept="video/*">
-            <button id="playBtn">Play / Stop</button>
-            <button onclick="changeShape('flat')">Flat Screen</button>
-            <button onclick="changeShape('inout')">Curve In / Out</button>
-            <button onclick="changeShape('sphere')">360</button>
-            <button onclick="zoom(true)">Zoom In</button>
-            <button onclick="zoom(false)">Zoom Out</button>
-            <button onclick="toggleOrientation()">Horizontal/Verticle</button>
-        </div>
-    </div>
-
-    <video id="video" loop playsinline style="display:none"></video>
-
-    <script type="module">
-        import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
-        import { OrbitControls } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js';
-
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-        
-        const controls = new OrbitControls(camera, renderer.domElement);
-        camera.position.z = 10;
-
-        let curveState = 0;
-        const video = document.getElementById('video');
-        const texture = new THREE.VideoTexture(video);
-        const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
-        let screen = new THREE.Mesh(new THREE.PlaneGeometry(16, 9), material);
-        scene.add(screen);
-
-        window.toggleOrientation = () => screen.rotation.z = (screen.rotation.z === 0) ? Math.PI / 2 : 0;
-        document.getElementById('toggle-btn').onclick = () => { const p = document.getElementById('panel'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; };
-        document.getElementById('playBtn').onclick = () => video.paused ? video.play() : video.pause();
-        window.zoom = (inOut) => camera.position.z += inOut ? -1 : 1;
-        
-        window.changeShape = (type) => {
-            scene.remove(screen);
-            let g = (type === 'flat') ? new THREE.PlaneGeometry(16, 9) : (type === 'sphere') ? new THREE.SphereGeometry(8, 32, 32) : (curveState = (curveState === 1) ? 2 : 1, curveState === 1 ? new THREE.CylinderGeometry(8, 8, 5, 32, 1, true, 0, Math.PI/2) : new THREE.CylinderGeometry(8, 8, 5, 32, 1, true, Math.PI, Math.PI/2));
-            screen = new THREE.Mesh(g, material);
-            scene.add(screen);
-        };
-        
-        document.getElementById('fileInput').onchange = (e) => video.src = URL.createObjectURL(e.target.files[0]);
-
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        window.onresize = () => { renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); };
-    </script>
-</body>
-</html>
+<div class="menu"><button id="toggle" class="toggle" aria-label="Menu">+</button><div id="panel" class="panel"><div class="title">WEI.rd</div><input class="file" type="file" id="file" accept="video/*"><div class="row"><button data-mode="flat" class="active">FLAT</button><button data-mode="curve">CURVED</button><button data-mode="360">360°</button></div><div class="row two"><button id="play">PLAY</button><button id="reset">RESET VIEW</button></div><div class="row"><button id="zoomIn">ZOOM +</button><button id="zoomOut">ZOOM −</button><button id="rotate">ROTATE</button></div><div class="row two"><button id="mute">MUTE</button><button id="full">FULLSCREEN</button></div><div id="status" class="status">Choose a local video</div></div></div>
+<div id="hint" class="hint">Drag to look · wheel / pinch to zoom</div><video id="video" playsinline loop preload="metadata" class="hidden"></video>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';import{OrbitControls}from'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id),video=$('video'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,1000),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);document.body.appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.06;controls.enablePan=false;controls.rotateSpeed=-.35;controls.zoomSpeed=.8;const texture=new THREE.VideoTexture(video);texture.colorSpace=THREE.SRGBColorSpace;const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});let screen=null,mode='flat',rotated=false,objectURL=null;
+function disposeScreen(){if(screen){scene.remove(screen);screen.geometry.dispose();screen=null}}
+function videoAspect(){return video.videoWidth&&video.videoHeight?video.videoWidth/video.videoHeight:16/9}
+function makeFlat(){const a=videoAspect(),h=6,w=h*a;return new THREE.PlaneGeometry(w,h,1,1)}
+function makeCurve(){const a=videoAspect(),h=6,w=h*a,segments=64,depth=Math.min(2.2,w*.18),g=new THREE.PlaneGeometry(w,h,segments,1),p=g.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),n=x/(w/2);p.setZ(i,-depth*n*n)}p.needsUpdate=true;g.computeVertexNormals();return g}
+function makeSphere(){const g=new THREE.SphereGeometry(10,64,40);g.scale(-1,1,1);return g}
+function setMode(next){mode=next;disposeScreen();screen=new THREE.Mesh(next==='360'?makeSphere():next==='curve'?makeCurve():makeFlat(),material);scene.add(screen);rotated=false;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===next));resetView()}
+function resetView(){controls.reset();camera.up.set(0,1,0);if(mode==='360'){camera.position.set(0,0,.01);camera.fov=75;controls.target.set(0,0,-1);controls.minDistance=0;controls.maxDistance=.05}else{camera.position.set(0,0,10);camera.fov=65;controls.target.set(0,0,0);controls.minDistance=4;controls.maxDistance=22}camera.updateProjectionMatrix();controls.update()}
+function zoom(delta){if(mode==='360'){camera.fov=THREE.MathUtils.clamp(camera.fov+delta,35,100);camera.updateProjectionMatrix()}else{camera.position.z=THREE.MathUtils.clamp(camera.position.z+delta,4,22)}}
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));$('toggle').onclick=()=>{$('panel').classList.toggle('open');$('toggle').textContent=$('panel').classList.contains('open')?'×':'+'};$('play').onclick=()=>{if(!video.src)return;video.paused?video.play().catch(()=>{}):video.pause()};$('reset').onclick=resetView;$('zoomIn').onclick=()=>zoom(-1);$('zoomOut').onclick=()=>zoom(1);$('rotate').onclick=()=>{if(mode==='360')return;rotated=!rotated;screen.rotation.z=rotated?Math.PI/2:0};$('mute').onclick=()=>{video.muted=!video.muted;$('mute').textContent=video.muted?'UNMUTE':'MUTE'};$('full').onclick=()=>{document.fullscreenElement?document.exitFullscreen?.():document.documentElement.requestFullscreen?.()};
+$('file').onchange=e=>{const f=e.target.files?.[0];if(!f)return;if(objectURL)URL.revokeObjectURL(objectURL);objectURL=URL.createObjectURL(f);video.src=objectURL;video.load();$('status').textContent=f.name;video.play().catch(()=>{})};video.addEventListener('loadedmetadata',()=>{if(mode!=='360')setMode(mode)});video.addEventListener('play',()=>{$('play').textContent='PAUSE'});video.addEventListener('pause',()=>{$('play').textContent='PLAY'});video.addEventListener('error',()=>{$('status').textContent='Video could not be played'});
+let pinch=0;renderer.domElement.addEventListener('touchstart',e=>{if(e.touches.length===2)pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY)},{passive:true});renderer.domElement.addEventListener('touchmove',e=>{if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(pinch)zoom((pinch-d)*.015);pinch=d}},{passive:true});renderer.domElement.addEventListener('touchend',()=>pinch=0,{passive:true});
+function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}setMode('flat');animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});addEventListener('beforeunload',()=>{if(objectURL)URL.revokeObjectURL(objectURL)});if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script></body></html>
