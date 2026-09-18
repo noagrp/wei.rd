@@ -57,9 +57,9 @@ jobs:
           if old not in s: raise SystemExit('repeat anchor missing')
           s=s.replace(old,new,1)
 
-          old="$('brightness').oninput=e=>{const v=+e.target.value;renderer.domElement.style.filter=\`brightness(\${v})\`;$('brightVal').value=Math.round(v*100)+'%'};"
-          new="$('brightness').oninput=e=>{const v=+e.target.value;renderer.domElement.style.filter=\`brightness(\${v})\`;video.style.filter=\`brightness(\${v})\`;$('brightVal').value=Math.round(v*100)+'%'};"
-          if old not in s: raise SystemExit('brightness anchor missing')
+          old="renderer.domElement.style.filter=\`brightness(\${v})\`"
+          new="renderer.domElement.style.filter=\`brightness(\${v})\`;video.style.filter=\`brightness(\${v})\`"
+          if old not in s: raise SystemExit('brightness filter anchor missing')
           s=s.replace(old,new,1)
 
           old="video.addEventListener('loadedmetadata',()=>{if(mode!=='360'){const r=rotation,f=flipped;disposeScreen();screen=new THREE.Mesh(mode==='curve'?makeCurve():makeFlat(),material);scene.add(screen);rotation=r;flipped=f;applyTransform();center()}$('duration').textContent=fmt(video.duration)});"
