@@ -1,0 +1,93 @@
+name: Improve WEI.rd Mobile Playback
+on:
+  push:
+    paths:
+      - '.github/workflows/mobile-playback.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Improve mobile playback
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          old=".hidden{display:none!important}.floater"
+          new=".hidden{display:none!important}#video.native-flat{display:block!important;position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:0;transform-origin:center center}.floater"
+          if old not in s: raise SystemExit('css anchor missing')
+          s=s.replace(old,new,1)
+
+          old="const texture=new THREE.VideoTexture(video);texture.colorSpace=THREE.SRGBColorSpace;const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});let screen=null,mode='flat',rotation=0,flipped=false,seeking=false,files=[],urls=[],index=0,shuffle=false,repeat=0,docked=localStorage.getItem('weird-docked')==='1';"
+          new="const texture=new THREE.VideoTexture(video);texture.colorSpace=THREE.SRGBColorSpace;const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});let screen=null,mode='flat',rotation=0,flipped=false,flatZoom=1,seeking=false,files=[],urls=[],index=0,shuffle=false,repeat=0,docked=localStorage.getItem('weird-docked')==='1';"
+          if old not in s: raise SystemExit('state anchor missing')
+          s=s.replace(old,new,1)
+
+          old="function disposeScreen(){if(screen){scene.remove(screen);screen.geometry.dispose();screen=null}}function aspect(){return video.videoWidth&&video.videoHeight?video.videoWidth/video.videoHeight:16/9}"
+          new="function disposeScreen(){if(screen){scene.remove(screen);screen.geometry.dispose();screen=null}}function useNativeFlat(){return mode==='flat'}function syncFlatView(){if(!useNativeFlat())return;const sx=flipped?-flatZoom:flatZoom,sy=flatZoom;video.style.transform=\`rotate(\${rotation}deg) scale(\${sx},\${sy})\`;video.style.filter=\`brightness(\${+$('brightness').value||1})\`}function syncRenderMode(){const flat=useNativeFlat();video.classList.toggle('native-flat',flat);renderer.domElement.style.display=flat?'none':'block';if(flat)syncFlatView()}function aspect(){return video.videoWidth&&video.videoHeight?video.videoWidth/video.videoHeight:16/9}"
+          if old not in s: raise SystemExit('helper anchor missing')
+          s=s.replace(old,new,1)
+
+          old="function applyTransform(){if(!screen||mode==='360')return;screen.rotation.z=THREE.MathUtils.degToRad(rotation);screen.scale.x=flipped?-1:1;$('rotate').textContent='ROTATE '+rotation+'°';$('flip').classList.toggle('active',flipped)}function setMode(n){mode=n;disposeScreen();screen=new THREE.Mesh(n==='360'?makeSphere():n==='curve'?makeCurve():makeFlat(),material);scene.add(screen);rotation=0;flipped=false;$('rotate').textContent='ROTATE 0°';$('flip').classList.remove('active');document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===n));center()}function center(){controls.reset();camera.up.set(0,1,0);if(mode==='360'){"
+          new="function applyTransform(){if(mode==='flat'){syncFlatView();$('rotate').textContent='ROTATE '+rotation+'°';$('flip').classList.toggle('active',flipped);return}if(!screen||mode==='360')return;screen.rotation.z=THREE.MathUtils.degToRad(rotation);screen.scale.x=flipped?-1:1;$('rotate').textContent='ROTATE '+rotation+'°';$('flip').classList.toggle('active',flipped)}function setMode(n){mode=n;disposeScreen();if(n!=='flat'){screen=new THREE.Mesh(n==='360'?makeSphere():makeCurve(),material);scene.add(screen)}rotation=0;flipped=false;flatZoom=1;$('rotate').textContent='ROTATE 0°';$('flip').classList.remove('active');document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===n));syncRenderMode();center()}function center(){if(mode==='flat'){rotation=0;flipped=false;flatZoom=1;applyTransform();return}controls.reset();camera.up.set(0,1,0);if(mode==='360'){"
+          if old not in s: raise SystemExit('mode anchor missing')
+          s=s.replace(old,new,1)
+
+          old="function zoom(d){if(mode==='360'){camera.fov=THREE.MathUtils.clamp(camera.fov+d,35,100);camera.updateProjectionMatrix()}else camera.position.z=THREE.MathUtils.clamp(camera.position.z+d,controls.minDistance,controls.maxDistance)}"
+          new="function zoom(d){if(mode==='flat'){flatZoom=THREE.MathUtils.clamp(flatZoom-d*.12,.5,3);syncFlatView();return}if(mode==='360'){camera.fov=THREE.MathUtils.clamp(camera.fov+d,35,100);camera.updateProjectionMatrix()}else camera.position.z=THREE.MathUtils.clamp(camera.position.z+d,controls.minDistance,controls.maxDistance)}"
+          if old not in s: raise SystemExit('zoom anchor missing')
+          s=s.replace(old,new,1)
+
+          old="function playPause(){if(!video.src)return;video.paused?video.play().catch(()=>{}):video.pause()}"
+          new="function tryPlay(){return video.play().then(()=>{$('status').textContent=files[index]?.name||'Playing'}).catch(e=>{$('status').textContent=(e?.name==='NotAllowedError'?'Tap Play to start':'Playback blocked · '+(e?.name||'unknown error'));throw e})}function playPause(){if(!video.src)return;video.paused?tryPlay().catch(()=>{}):video.pause()}"
+          if old not in s: raise SystemExit('play anchor missing')
+          s=s.replace(old,new,1)
+
+          old="function load(i,autoplay=true){if(!files.length)return;index=(i+files.length)%files.length;video.src=urls[index];video.load();$('status').textContent=files[index].name;updatePlaylist();if(autoplay)video.play().catch(()=>{})}"
+          new="function load(i,autoplay=true){if(!files.length)return;index=(i+files.length)%files.length;video.src=urls[index];video.load();$('status').textContent=files[index].name;updatePlaylist();if(autoplay)tryPlay().catch(()=>{})}"
+          if old not in s: raise SystemExit('load anchor missing')
+          s=s.replace(old,new,1)
+
+          old="if(repeat===2&&!manual){video.currentTime=0;video.play().catch(()=>{});return}"
+          new="if(repeat===2&&!manual){video.currentTime=0;tryPlay().catch(()=>{});return}"
+          if old not in s: raise SystemExit('repeat anchor missing')
+          s=s.replace(old,new,1)
+
+          old="$('brightness').oninput=e=>{const v=+e.target.value;renderer.domElement.style.filter=\`brightness(\${v})\`;$('brightVal').value=Math.round(v*100)+'%'};"
+          new="$('brightness').oninput=e=>{const v=+e.target.value;renderer.domElement.style.filter=\`brightness(\${v})\`;video.style.filter=\`brightness(\${v})\`;$('brightVal').value=Math.round(v*100)+'%'};"
+          if old not in s: raise SystemExit('brightness anchor missing')
+          s=s.replace(old,new,1)
+
+          old="video.addEventListener('loadedmetadata',()=>{if(mode!=='360'){const r=rotation,f=flipped;disposeScreen();screen=new THREE.Mesh(mode==='curve'?makeCurve():makeFlat(),material);scene.add(screen);rotation=r;flipped=f;applyTransform();center()}$('duration').textContent=fmt(video.duration)});"
+          new="video.addEventListener('loadedmetadata',()=>{if(mode==='curve'){const r=rotation,f=flipped;disposeScreen();screen=new THREE.Mesh(makeCurve(),material);scene.add(screen);rotation=r;flipped=f;applyTransform();center()}else if(mode==='flat'){syncRenderMode();syncFlatView()}const size=files[index]?.size?(' · '+Math.round(files[index].size/1024/1024)+' MB'):'';$('status').textContent=(files[index]?.name||'Video')+' · '+video.videoWidth+'×'+video.videoHeight+size;$('duration').textContent=fmt(video.duration)});"
+          if old not in s: raise SystemExit('metadata anchor missing')
+          s=s.replace(old,new,1)
+
+          old="video.addEventListener('error',()=>$('status').textContent='Could not play · '+(files[index]?.name||'video'));"
+          new="video.addEventListener('error',()=>{const code=video.error?.code||0,msg={1:'Playback aborted',2:'Video read error',3:'Video decode failed',4:'Format or codec not supported'}[code]||'Could not play';$('status').textContent=msg+' · '+(files[index]?.name||'video')});"
+          if old not in s: raise SystemExit('error anchor missing')
+          s=s.replace(old,new,1)
+
+          old="if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));"
+          new="if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{}));"
+          if old not in s: raise SystemExit('sw register anchor missing')
+          s=s.replace(old,new,1)
+
+          p.write_text(s)
+
+          sw=Path('sw.js')
+          w=sw.read_text()
+          if "const CACHE='weird-v6'" not in w: raise SystemExit('cache anchor missing')
+          sw.write_text(w.replace("const CACHE='weird-v6'","const CACHE='weird-v7'",1))
+          PY
+      - name: Commit
+        run: |
+          git config user.name "noagrp"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html sw.js
+          git commit -m "Improve WEI.rd mobile video playback"
+          git push
