@@ -57,10 +57,6 @@ jobs:
           if old not in s: raise SystemExit('repeat anchor missing')
           s=s.replace(old,new,1)
 
-          old="renderer.domElement.style.filter=\`brightness(\${v})\`"
-          new="renderer.domElement.style.filter=\`brightness(\${v})\`;video.style.filter=\`brightness(\${v})\`"
-          if old not in s: raise SystemExit('brightness filter anchor missing')
-          s=s.replace(old,new,1)
 
           old="video.addEventListener('loadedmetadata',()=>{if(mode!=='360'){const r=rotation,f=flipped;disposeScreen();screen=new THREE.Mesh(mode==='curve'?makeCurve():makeFlat(),material);scene.add(screen);rotation=r;flipped=f;applyTransform();center()}$('duration').textContent=fmt(video.duration)});"
           new="video.addEventListener('loadedmetadata',()=>{if(mode==='curve'){const r=rotation,f=flipped;disposeScreen();screen=new THREE.Mesh(makeCurve(),material);scene.add(screen);rotation=r;flipped=f;applyTransform();center()}else if(mode==='flat'){syncRenderMode();syncFlatView()}const size=files[index]?.size?(' · '+Math.round(files[index].size/1024/1024)+' MB'):'';$('status').textContent=(files[index]?.name||'Video')+' · '+video.videoWidth+'×'+video.videoHeight+size;$('duration').textContent=fmt(video.duration)});"
